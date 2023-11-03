@@ -19,7 +19,7 @@ public class Main {
         // provo ad aprire una connection con try-with-resources
         try (Connection connection = DriverManager.getConnection(url, user, password)) {
 
-            System.out.println("Inserisci una stringa per la ricerca: ");
+            System.out.println("Search: ");
             String userString = scan.nextLine();
 
             String query = "select c.name as Nazione ,c.country_id, r.name as Regione, c2.name as Continente\n" +
@@ -43,6 +43,53 @@ public class Main {
                     System.out.println("Unable to execute query");
                     e.printStackTrace();
                 }
+
+                System.out.println("Choose a country id: ");
+                String selectedId = scan.nextLine();
+
+                String languageQuery = "select l.language\n" +
+                        "from country_languages cl \n" +
+                        "join languages l  on cl.language_id = l.language_id \n" +
+                        "where cl.country_id = ? ";
+                try (PreparedStatement languageStatement = connection.prepareStatement(languageQuery)) {
+                    languageStatement.setString(1, selectedId);
+                    System.out.println("Details for country: " + selectedId);
+                    try (ResultSet languageResult = languageStatement.executeQuery()) {
+                        System.out.print("Languages: ");
+                        while (languageResult.next()) {
+                            String languages = languageResult.getString("language");
+                            System.out.print(languages + ",");
+                        }
+                    }
+                } catch (SQLException e) {
+                    System.out.println("Unable to execute query");
+                    e.printStackTrace();
+                }
+
+                String statisticsQuery = "select *\n" +
+                        "from country_stats cs \n" +
+                        "where country_id = ?\n" +
+                        "order by `year` desc \n" +
+                        "limit 1;";
+                try (PreparedStatement statisticsStatement = connection.prepareStatement(statisticsQuery)) {
+                    statisticsStatement.setString(1, selectedId);
+                    try (ResultSet statisticsResult = statisticsStatement.executeQuery()) {
+                        System.out.println();
+                        System.out.println("Most recent stats");
+                        while (statisticsResult.next()) {
+                            String year = statisticsResult.getString("year");
+                            System.out.println("Year: " + year);
+                            String population = statisticsResult.getString("population");
+                            System.out.println("Population: " + population);
+                            String gdp = statisticsResult.getString("gdp");
+                            System.out.println("GDP: " + gdp);
+                        }
+                    }
+                } catch (SQLException e) {
+                    System.out.println("Unable to execute query");
+                    e.printStackTrace();
+                }
+
             } catch (SQLException e) {
                 System.out.println("Unable to prepare statement");
                 e.printStackTrace();
