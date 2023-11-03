@@ -5,10 +5,13 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Scanner;
 
 public class Main {
 
     public static void main(String[] args) {
+        Scanner scan = new Scanner(System.in);
+
         String url = "jdbc:mysql://localhost:3306/db_nations";
         String user = "root";
         String password = "root";
@@ -16,12 +19,17 @@ public class Main {
         // provo ad aprire una connection con try-with-resources
         try (Connection connection = DriverManager.getConnection(url, user, password)) {
 
+            System.out.println("Inserisci una stringa per la ricerca: ");
+            String userString = scan.nextLine();
+
             String query = "select c.name as Nazione ,c.country_id, r.name as Regione, c2.name as Continente\n" +
                     "from countries c join regions r on c.region_id  = r.region_id \n" +
                     "join continents c2 on r.continent_id  = c2.continent_id \n" +
+                    "where c.name like ?\n" +
                     "ORDER by c.name;";
 
             try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+                preparedStatement.setString(1, "%" + userString + "%");
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     while (resultSet.next()) {
                         String nations = resultSet.getString("Nazione");
@@ -44,5 +52,7 @@ public class Main {
             System.out.println("Unable to open connection");
             e.printStackTrace();
         }
+
+        scan.close();
     }
 }
